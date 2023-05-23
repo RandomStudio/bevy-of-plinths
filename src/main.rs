@@ -1,8 +1,3 @@
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
-
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
     prelude::*,
@@ -35,20 +30,16 @@ fn setup_scene(
         BloomSettings::default(), // 3. Enable bloom for the camera
     ));
 
-    let material_emissive1 = materials.add(StandardMaterial {
-        emissive: Color::rgb_linear(13.99, 5.32, 2.0), // 4. Put something bright in a dark environment to see the effect
-        ..default()
-    });
-    let material_emissive2 = materials.add(StandardMaterial {
-        emissive: Color::rgb_linear(2.0, 13.99, 5.32),
-        ..default()
-    });
-    let material_emissive3 = materials.add(StandardMaterial {
-        emissive: Color::rgb_linear(5.32, 2.0, 13.99),
-        ..default()
-    });
-    let material_non_emissive = materials.add(StandardMaterial {
-        base_color: Color::GRAY,
+    let brightness: f32 = 4.0;
+
+    let material_emissive = materials.add(StandardMaterial {
+        emissive: Color::Hsla {
+            hue: 0.,
+            saturation: 0.,
+            lightness: brightness,
+            alpha: 1.0,
+        },
+        // Color::rgb_linear(brightness, brightness, brightness), // 4. Put something bright in a dark environment to see the effect
         ..default()
     });
 
@@ -61,23 +52,11 @@ fn setup_scene(
         .unwrap(),
     );
 
-    for x in -10..10 {
-        for z in -10..10 {
-            let mut hasher = DefaultHasher::new();
-            (x, z).hash(&mut hasher);
-            let rand = (hasher.finish() - 2) % 6;
-
-            let material = match rand {
-                0 => material_emissive1.clone(),
-                1 => material_emissive2.clone(),
-                2 => material_emissive3.clone(),
-                3 | 4 | 5 => material_non_emissive.clone(),
-                _ => unreachable!(),
-            };
-
+    for x in -4..4 {
+        for z in -4..4 {
             commands.spawn(PbrBundle {
                 mesh: mesh.clone(),
-                material,
+                material: material_emissive.clone(),
                 transform: Transform::from_xyz(x as f32 * 2.0, 0.0, z as f32 * 2.0),
                 ..default()
             });
