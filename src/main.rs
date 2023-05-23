@@ -8,6 +8,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_scene)
         .add_system(camera_control_system)
+        .add_system(move_people)
         .add_system(bevy::window::close_on_esc)
         .run();
 }
@@ -67,6 +68,7 @@ fn setup_scene(
     });
 
     let size = 0.2;
+    let spacing = 10.0;
 
     let light_box_mesh = meshes.add(
         shape::Box {
@@ -88,15 +90,20 @@ fn setup_scene(
 
     for x in -4..4 {
         for z in -4..4 {
-            let x = x as f32 * 2.0;
+            let x = x as f32 * size * spacing;
             let y = 0.0;
-            let z = z as f32 * 2.0;
+            let z = z as f32 * size * spacing;
             commands.spawn(PbrBundle {
                 mesh: light_box_mesh.clone(),
                 material: material_emissive.clone(),
                 transform: Transform::from_xyz(x, y, z),
                 ..default()
             });
+
+            // Adding too many lights appears to break the lighting system -
+            // might need to use baked lighting or cheat using vertex
+            // colours on a floor grid
+
             // commands.spawn(PointLightBundle {
             //     // transform: Transform::from_xyz(5.0, 8.0, 2.0),
             //     transform: Transform::from_xyz(x, y, x),
@@ -109,6 +116,66 @@ fn setup_scene(
             //     ..default()
             // });
         }
+    }
+
+    let entity_spawn = Vec3::ZERO;
+
+    let person = meshes.add(
+        shape::Icosphere {
+            radius: size,
+            subdivisions: 5,
+        }
+        .try_into()
+        .unwrap(),
+    );
+
+    commands.spawn((
+        PbrBundle {
+            mesh: person.clone(),
+            material: materials.add(StandardMaterial {
+                base_color: Color::BLUE,
+                ..default()
+            }),
+            transform: Transform::from_translation(entity_spawn).with_translation(Vec3::new(
+                0.,
+                size,
+                size * spacing / 2.,
+            )),
+            ..default()
+        },
+        Movable::new(entity_spawn),
+    ));
+}
+
+// Define a struct to keep some information about our entity.
+// Here it's an arbitrary movement speed, the spawn location, and a maximum distance from it.
+#[derive(Component)]
+struct Movable {
+    spawn: Vec3,
+    max_distance: f32,
+    speed: f32,
+}
+
+// Implement a utility function for easier Movable struct creation.
+impl Movable {
+    fn new(spawn: Vec3) -> Self {
+        Movable {
+            spawn,
+            max_distance: 5.0,
+            speed: 2.0,
+        }
+    }
+}
+
+// This system will move all Movable entities with a Transform
+fn move_people(mut people: Query<(&mut Transform, &mut Movable)>, timer: Res<Time>) {
+    for (mut transform, mut person) in &mut people {
+        // Check if the entity moved too far from its spawn, if so invert the moving direction.
+        if (person.spawn - transform.translation).length() > person.max_distance {
+            person.speed *= -1.0;
+        }
+        let direction = transform.local_x();
+        transform.translation += direction * person.speed * timer.delta_seconds();
     }
 }
 
