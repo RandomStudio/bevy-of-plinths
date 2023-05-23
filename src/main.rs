@@ -13,6 +13,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_scene)
         .add_system(camera_control_system)
+        .add_system(bevy::window::close_on_esc)
         .run();
 }
 
