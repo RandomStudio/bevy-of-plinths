@@ -17,6 +17,29 @@ fn setup_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    commands.spawn(PointLightBundle {
+        // transform: Transform::from_xyz(5.0, 8.0, 2.0),
+        transform: Transform::from_xyz(0., 1., 0.),
+        point_light: PointLight {
+            intensity: 100.0, // lumens - roughly a 100W non-halogen incandescent bulb
+            color: Color::WHITE,
+            // shadows_enabled: true,
+            ..default()
+        },
+        ..default()
+    });
+    // ground plane
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(shape::Plane::from_size(20.0).into()),
+        material: materials.add(StandardMaterial {
+            base_color: Color::WHITE,
+            perceptual_roughness: 0.9,
+            ..default()
+        }),
+        ..default()
+    });
+
+    // 3D camera
     commands.spawn((
         Camera3dBundle {
             camera: Camera {
@@ -43,23 +66,48 @@ fn setup_scene(
         ..default()
     });
 
-    let mesh = meshes.add(
-        shape::Icosphere {
-            radius: 0.5,
-            subdivisions: 5,
+    let size = 0.2;
+
+    let light_box_mesh = meshes.add(
+        shape::Box {
+            min_x: -size,
+            max_x: size,
+            min_y: 0.,
+            max_y: size * 4.,
+            min_z: -size,
+            max_z: size,
         }
+        // shape::Cube { size: 0.5 }
+        // shape::Icosphere {
+        //     radius: 0.5,
+        //     subdivisions: 5,
+        // }
         .try_into()
         .unwrap(),
     );
 
     for x in -4..4 {
         for z in -4..4 {
+            let x = x as f32 * 2.0;
+            let y = 0.0;
+            let z = z as f32 * 2.0;
             commands.spawn(PbrBundle {
-                mesh: mesh.clone(),
+                mesh: light_box_mesh.clone(),
                 material: material_emissive.clone(),
-                transform: Transform::from_xyz(x as f32 * 2.0, 0.0, z as f32 * 2.0),
+                transform: Transform::from_xyz(x, y, z),
                 ..default()
             });
+            // commands.spawn(PointLightBundle {
+            //     // transform: Transform::from_xyz(5.0, 8.0, 2.0),
+            //     transform: Transform::from_xyz(x, y, x),
+            //     point_light: PointLight {
+            //         intensity: 100.0, // lumens - roughly a 100W non-halogen incandescent bulb
+            //         color: Color::RED,
+            //         // shadows_enabled: true,
+            //         ..default()
+            //     },
+            //     ..default()
+            // });
         }
     }
 }
