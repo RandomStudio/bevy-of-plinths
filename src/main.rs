@@ -12,6 +12,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_scene)
+        .add_system(camera_control_system)
         .run();
 }
 
@@ -81,4 +82,24 @@ fn setup_scene(
             });
         }
     }
+}
+
+fn camera_control_system(
+    mut camera: Query<(&mut Camera, &mut Transform, &GlobalTransform), With<Camera3d>>,
+    input: Res<Input<KeyCode>>,
+    time: Res<Time>,
+) {
+    let (mut camera, mut camera_transform, camera_global_transform) = camera.single_mut();
+    let rotation = if input.pressed(KeyCode::Left) {
+        time.delta_seconds()
+    } else if input.pressed(KeyCode::Right) {
+        -time.delta_seconds()
+    } else {
+        0.0
+    };
+
+    camera_transform.rotate_around(
+        Vec3::ZERO,
+        Quat::from_euler(EulerRot::XYZ, 0.0, rotation, 0.0),
+    );
 }
