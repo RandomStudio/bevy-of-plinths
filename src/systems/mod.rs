@@ -84,16 +84,11 @@ pub fn setup_scene(
         .unwrap(),
     );
 
-    let mut count = 0;
-
     for row in -4..4 {
         for col in -4..4 {
             let x = row as f32 * size * spacing;
             let y = 0.0;
             let z = col as f32 * size * spacing;
-            count += 1;
-            let should_activate = count % 2 == 0;
-            println!("Count {}, should activate? {}", count, should_activate);
             commands.spawn((
                 PbrBundle {
                     mesh: light_box_mesh.clone(),
@@ -111,7 +106,7 @@ pub fn setup_scene(
                     ..default()
                 },
                 ProximityActivated {
-                    is_activated: should_activate,
+                    is_activated: false,
                     time_till_deactivated: Duration::ZERO,
                 },
             ));
@@ -175,7 +170,7 @@ pub fn move_people(mut people: Query<(&mut Transform, &mut Movable)>, timer: Res
     }
 }
 
-pub fn camera_control_system(
+pub fn camera_control(
     mut camera: Query<(&mut Camera, &mut Transform, &GlobalTransform), With<Camera3d>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
@@ -212,9 +207,9 @@ const DIMMED: f32 = 0.1;
 
 pub fn light_up_activated(
     mut materials: ResMut<Assets<StandardMaterial>>,
-    fixtures: Query<(&Handle<StandardMaterial>, &ProximityActivated)>,
+    entities: Query<(&Handle<StandardMaterial>, &ProximityActivated)>,
 ) {
-    for (material_handle, proximity) in &fixtures {
+    for (material_handle, proximity) in &entities {
         let material = materials.get_mut(material_handle).unwrap();
         if proximity.is_activated {
             material.emissive.set_r(LIT);
@@ -227,4 +222,22 @@ pub fn light_up_activated(
         }
     }
     // for (mut fixture, proximity) in &mut fixtures {}
+}
+
+pub fn make_close_activated(
+    mut fixtures: Query<(&GlobalTransform, &mut ProximityActivated)>,
+    user: Query<&GlobalTransform, With<Movable>>,
+) {
+    // TODO: this works for single user
+    let user_transform = user.single();
+
+    for (transform, mut proximity) in &mut fixtures {
+        let delta = transform.translation() - user_transform.translation();
+        let distance = delta.length();
+        if distance < 2.0 {
+            proximity.is_activated = true;
+        } else {
+            proximity.is_activated = false;
+        }
+    }
 }
