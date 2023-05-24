@@ -25,5 +25,5 @@ impl Movable {
 #[derive(Component)]
 pub struct ProximityActivated {
     pub is_activated: bool,
-    pub time_till_deactivated: Duration,
+    pub elapsed_activated: Duration,
 }
