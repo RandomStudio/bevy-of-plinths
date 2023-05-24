@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use systems::{control_camera, light_up_activated, make_close_activated, move_person, setup_scene};
+use systems::{control_camera, light_up_activated, make_close_activated, move_person};
 
 mod components;
 mod systems;
@@ -7,7 +7,7 @@ mod utils;
 
 use std::time::Duration;
 
-use crate::systems::control_person;
+use crate::systems::{control_person, scene::setup_scene};
 
 fn main() {
     assert_eq!(

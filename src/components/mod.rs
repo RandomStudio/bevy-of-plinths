@@ -27,7 +27,7 @@ impl ProximityActivated {
     pub fn new() -> Self {
         ProximityActivated {
             is_activated: false,
-            detection_radius: 1.9,
+            detection_radius: 2.0,
             elapsed_activated: Duration::ZERO,
         }
     }
