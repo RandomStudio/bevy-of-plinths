@@ -7,6 +7,8 @@ mod utils;
 
 use std::time::Duration;
 
+use crate::systems::control_person;
+
 fn main() {
     assert_eq!(
         Duration::new(0, 1).checked_sub(Duration::new(0, 0)),
@@ -20,6 +22,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_scene)
         .add_system(control_camera)
+        .add_system(control_person)
         .add_system(move_person)
         .add_system(make_close_activated)
         .add_system(light_up_activated)

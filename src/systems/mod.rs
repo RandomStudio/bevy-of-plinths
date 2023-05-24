@@ -28,20 +28,6 @@ pub fn setup_scene(
         ..default()
     });
 
-    // 3D camera
-    commands.spawn((
-        Camera3dBundle {
-            camera: Camera {
-                hdr: true, // 1. HDR is required for bloom
-                ..default()
-            },
-            tonemapping: Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
-            transform: Transform::from_xyz(-2.0, 2.5, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
-        BloomSettings::default(), // 3. Enable bloom for the camera
-    ));
-
     let brightness: f32 = 0.1;
 
     let box_height = 1.25;
@@ -61,25 +47,28 @@ pub fn setup_scene(
         .unwrap(),
     );
 
-    let num_rows: i32 = 5;
-    let num_cols: i32 = 5;
+    let num_rows: i32 = 4;
+    let num_cols: i32 = 4;
+
+    let row_max = num_rows as f32 - 1.;
+    let col_max = num_cols as f32 - 1.;
 
     for row in 0..num_rows {
         for col in 0..num_cols {
             let x = map_range(
-                row as f32 * spacing,
+                row as f32,
                 0.,
-                num_rows as f32,
-                -spacing * num_rows as f32 / 2.0,
-                spacing * num_rows as f32 / 2.0,
+                row_max,
+                -spacing * row_max / 2.0,
+                spacing * row_max / 2.0,
             );
             let y = 0.0;
             let z = map_range(
-                col as f32 * spacing,
+                col as f32,
                 0.,
-                num_cols as f32,
-                -spacing * num_cols as f32 / 2.0,
-                spacing * num_cols as f32 / 2.0,
+                col_max,
+                -spacing * col_max / 2.0,
+                spacing * col_max / 2.0,
             );
             commands.spawn((
                 PbrBundle {
@@ -104,8 +93,7 @@ pub fn setup_scene(
 
     // ground plane
     commands.spawn(PbrBundle {
-        mesh: meshes
-            .add(shape::Plane::from_size(num_rows.max(num_cols) as f32 * spacing * 3.0).into()),
+        mesh: meshes.add(shape::Plane::from_size(row_max * spacing * 3.0).into()),
         material: materials.add(StandardMaterial {
             base_color: Color::GRAY,
             perceptual_roughness: 0.5,
@@ -113,6 +101,21 @@ pub fn setup_scene(
         }),
         ..default()
     });
+
+    // 3D camera
+    commands.spawn((
+        Camera3dBundle {
+            camera: Camera {
+                hdr: true, // 1. HDR is required for bloom
+                ..default()
+            },
+            tonemapping: Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
+            transform: Transform::from_xyz(0., 2.5, row_max * spacing)
+                .looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
+        BloomSettings::default(), // 3. Enable bloom for the camera
+    ));
 
     let person_radius = 0.25;
     let person_height = 1.8;
@@ -168,7 +171,7 @@ pub fn setup_scene(
                 transform: Transform::default()
                     .with_translation(Vec3::new(
                         0.,
-                        person_height / 2.0 + person_radius,
+                        person_height / 2.0 - person_radius,
                         person_radius,
                     ))
                     .with_rotation(Quat::from_euler(
@@ -182,23 +185,36 @@ pub fn setup_scene(
         });
 }
 
-pub fn move_person(mut people: Query<(&mut Transform, &mut Movable)>, timer: Res<Time>) {
+pub fn move_person(mut people: Query<(&mut Transform, &Movable)>, timer: Res<Time>) {
     // TODO: this assumes multiple people
-    for (mut transform, mut person) in &mut people {
+    for (mut transform, person) in &mut people {
         // // Check if the entity moved too far from its spawn, if so invert the moving direction.
         // if (person.spawn - transform.translation).length() > person.max_distance {
         //     person.speed *= -1.0;
         // }
-        // let direction = transform.local_x();
-        transform.translation += person.direction * person.forward_speed * timer.delta_seconds();
+        let direction = transform.local_z();
+        transform.translation += direction * person.forward_speed * timer.delta_seconds();
     }
 }
 
 pub fn control_person(
-    mut people: Query<&mut Movable>,
+    mut people: Query<(&mut Transform, &mut Movable)>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
+    let (mut transform, mut person) = people.single_mut();
+    if input.pressed(KeyCode::W) {
+        person.forward_speed += time.delta_seconds();
+    }
+    if input.pressed(KeyCode::S) {
+        person.forward_speed -= time.delta_seconds();
+    }
+    if input.pressed(KeyCode::A) {
+        transform.rotate_y(time.delta_seconds());
+    }
+    if input.pressed(KeyCode::D) {
+        transform.rotate_y(-time.delta_seconds());
+    }
 }
 
 pub fn control_camera(
@@ -216,13 +232,13 @@ pub fn control_camera(
     };
 
     let movement = if input.pressed(KeyCode::Up) {
-        time.delta_seconds()
+        -time.delta_seconds() // closer
     } else if input.pressed(KeyCode::Down) {
-        -time.delta_seconds()
+        time.delta_seconds() // further back
     } else {
         0.0
     };
-    let direction = camera_transform.local_y();
+    let direction = camera_transform.local_z();
     camera_transform.translation += direction * movement;
 
     camera_transform.rotate_around(
