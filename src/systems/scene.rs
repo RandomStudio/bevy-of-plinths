@@ -8,6 +8,8 @@ use crate::{
     utils::map_range,
 };
 
+use super::DIMMED;
+
 const NUM_ROWS: i32 = 5;
 const NUM_COLS: i32 = 5;
 
@@ -16,6 +18,8 @@ pub fn setup_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    // ================ Point Light in the centre
+
     commands.spawn(PointLightBundle {
         // transform: Transform::from_xyz(5.0, 8.0, 2.0),
         transform: Transform::from_xyz(0., 5., 0.),
@@ -29,7 +33,7 @@ pub fn setup_scene(
         ..default()
     });
 
-    let brightness: f32 = 0.1;
+    // ================ boxes
 
     let box_height = 1.25;
     let box_width = 0.5;
@@ -75,7 +79,7 @@ pub fn setup_scene(
                         emissive: Color::Hsla {
                             hue: 0.,
                             saturation: 0.,
-                            lightness: brightness,
+                            lightness: DIMMED,
                             alpha: 1.0,
                         },
                         // Color::rgb_linear(brightness, brightness, brightness), // 4. Put something bright in a dark environment to see the effect
@@ -89,7 +93,7 @@ pub fn setup_scene(
         }
     }
 
-    // ground plane
+    // ================ ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(shape::Plane::from_size(row_max * spacing * 3.0).into()),
         material: materials.add(StandardMaterial {
@@ -100,7 +104,7 @@ pub fn setup_scene(
         ..default()
     });
 
-    // 3D camera
+    // ================ 3D camera
     commands.spawn((
         Camera3dBundle {
             camera: Camera {
@@ -115,6 +119,7 @@ pub fn setup_scene(
         BloomSettings::default(), // 3. Enable bloom for the camera
     ));
 
+    // ================ Person
     let person_radius = 0.25;
     let person_height = 1.8;
 
@@ -151,7 +156,7 @@ pub fn setup_scene(
                     ..default()
                 }),
                 transform: Transform::default().with_translation(Vec3::new(
-                    0.,
+                    0. + spacing / 2.0,
                     (person_height + person_radius * 2.0) / 2.0,
                     0.,
                 )),

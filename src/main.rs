@@ -20,6 +20,7 @@ fn main() {
     );
     App::new()
         .add_plugins(DefaultPlugins)
+        .insert_resource(ClearColor(Color::rgb(0.2, 0., 0.1)))
         .add_startup_system(setup_scene)
         .add_system(control_camera)
         .add_system(control_person)
