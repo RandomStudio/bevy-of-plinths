@@ -6,18 +6,16 @@ use bevy::prelude::*;
 // Here it's an arbitrary movement speed, the spawn location, and a maximum distance from it.
 #[derive(Component)]
 pub struct Movable {
-    pub spawn: Vec3,
-    pub max_distance: f32,
-    pub speed: f32,
+    pub direction: Vec3,
+    pub forward_speed: f32,
 }
 
 // Implement a utility function for easier Movable struct creation.
 impl Movable {
-    pub fn new(spawn: Vec3) -> Self {
+    pub fn new() -> Self {
         Movable {
-            spawn,
-            max_distance: 5.0,
-            speed: 2.0,
+            direction: Vec3::new(1., 0., 0.),
+            forward_speed: 0.,
         }
     }
 }
@@ -25,5 +23,16 @@ impl Movable {
 #[derive(Component)]
 pub struct ProximityActivated {
     pub is_activated: bool,
+    pub detection_radius: f32,
     pub elapsed_activated: Duration,
+}
+
+impl ProximityActivated {
+    pub fn new() -> Self {
+        ProximityActivated {
+            is_activated: false,
+            detection_radius: 0.8,
+            elapsed_activated: Duration::ZERO,
+        }
+    }
 }

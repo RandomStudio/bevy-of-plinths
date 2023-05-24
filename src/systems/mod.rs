@@ -5,7 +5,10 @@ use bevy::{
     prelude::*,
 };
 
-use crate::components::{Movable, ProximityActivated};
+use crate::{
+    components::{Movable, ProximityActivated},
+    utils::map_range,
+};
 
 pub fn setup_scene(
     mut commands: Commands,
@@ -25,17 +28,6 @@ pub fn setup_scene(
         ..default()
     });
 
-    // ground plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(20.0).into()),
-        material: materials.add(StandardMaterial {
-            base_color: Color::GRAY,
-            perceptual_roughness: 0.9,
-            ..default()
-        }),
-        ..default()
-    });
-
     // 3D camera
     commands.spawn((
         Camera3dBundle {
@@ -44,7 +36,7 @@ pub fn setup_scene(
                 ..default()
             },
             tonemapping: Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(-2.0, 2.5, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
         BloomSettings::default(), // 3. Enable bloom for the camera
@@ -52,43 +44,43 @@ pub fn setup_scene(
 
     let brightness: f32 = 0.1;
 
-    // let material_emissive = materials.add(StandardMaterial {
-    //     emissive: Color::Hsla {
-    //         hue: 0.,
-    //         saturation: 0.,
-    //         lightness: brightness,
-    //         alpha: 1.0,
-    //     },
-    //     // Color::rgb_linear(brightness, brightness, brightness), // 4. Put something bright in a dark environment to see the effect
-    //     ..default()
-    // });
-
-    let size = 0.2;
-    let spacing = 10.0;
+    let box_height = 1.25;
+    let box_width = 0.5;
+    let spacing = 2.0; // centre-to-centre
 
     let light_box_mesh = meshes.add(
         shape::Box {
-            min_x: -size,
-            max_x: size,
+            min_x: -box_width / 2.0,
+            max_x: box_width / 2.0,
             min_y: 0.,
-            max_y: size * 4.,
-            min_z: -size,
-            max_z: size,
+            max_y: box_height,
+            min_z: -box_width / 2.0,
+            max_z: box_width / 2.0,
         }
-        // shape::Cube { size: 0.5 }
-        // shape::Icosphere {
-        //     radius: 0.5,
-        //     subdivisions: 5,
-        // }
         .try_into()
         .unwrap(),
     );
 
-    for row in -4..4 {
-        for col in -4..4 {
-            let x = row as f32 * size * spacing;
+    let num_rows: i32 = 5;
+    let num_cols: i32 = 5;
+
+    for row in 0..num_rows {
+        for col in 0..num_cols {
+            let x = map_range(
+                row as f32 * spacing,
+                0.,
+                num_rows as f32,
+                -spacing * num_rows as f32 / 2.0,
+                spacing * num_rows as f32 / 2.0,
+            );
             let y = 0.0;
-            let z = col as f32 * size * spacing;
+            let z = map_range(
+                col as f32 * spacing,
+                0.,
+                num_cols as f32,
+                -spacing * num_cols as f32 / 2.0,
+                spacing * num_cols as f32 / 2.0,
+            );
             commands.spawn((
                 PbrBundle {
                     mesh: light_box_mesh.clone(),
@@ -105,78 +97,111 @@ pub fn setup_scene(
                     transform: Transform::from_xyz(x, y, z),
                     ..default()
                 },
-                ProximityActivated {
-                    is_activated: false,
-                    elapsed_activated: Duration::ZERO,
-                },
+                ProximityActivated::new(),
             ));
-
-            // Adding too many lights appears to break the lighting system -
-            // might need to use baked lighting or cheat using vertex
-            // colours on a floor grid
-
-            // commands.spawn(PointLightBundle {
-            //     // transform: Transform::from_xyz(5.0, 8.0, 2.0),
-            //     transform: Transform::from_xyz(x, y + 2.0, x),
-            //     point_light: PointLight {
-            //         intensity: 60.0, // lumens - roughly a 100W non-halogen incandescent bulb
-            //         color: if row % 2 == 0 {
-            //             Color::RED
-            //         } else {
-            //             Color::BLUE
-            //         },
-            //         range: 5.0,
-            //         shadows_enabled: false,
-
-            //         ..default()
-            //     },
-            //     ..default()
-            // });
         }
     }
 
-    let entity_spawn = Vec3::ZERO;
+    // ground plane
+    commands.spawn(PbrBundle {
+        mesh: meshes
+            .add(shape::Plane::from_size(num_rows.max(num_cols) as f32 * spacing * 3.0).into()),
+        material: materials.add(StandardMaterial {
+            base_color: Color::GRAY,
+            perceptual_roughness: 0.5,
+            ..default()
+        }),
+        ..default()
+    });
 
-    let person = meshes.add(
-        shape::Icosphere {
-            radius: size,
-            subdivisions: 5,
+    let person_radius = 0.25;
+    let person_height = 1.8;
+
+    let body = meshes.add(
+        shape::Capsule {
+            radius: person_radius,
+            depth: person_height,
+            ..default()
+        }
+        // shape::Icosphere {
+        //     radius: size,
+        //     subdivisions: 5,
+        // }
+        .try_into()
+        .unwrap(),
+    );
+
+    let face = meshes.add(
+        shape::Cylinder {
+            radius: person_radius,
+            height: person_radius / 4.0,
+            ..default()
         }
         .try_into()
         .unwrap(),
     );
 
-    commands.spawn((
-        PbrBundle {
-            mesh: person.clone(),
-            material: materials.add(StandardMaterial {
-                base_color: Color::BLUE,
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: body,
+                material: materials.add(StandardMaterial {
+                    base_color: Color::BLUE,
+                    ..default()
+                }),
+                transform: Transform::default().with_translation(Vec3::new(
+                    0.,
+                    (person_height + person_radius * 2.0) / 2.0,
+                    0.,
+                )),
                 ..default()
-            }),
-            transform: Transform::from_translation(entity_spawn).with_translation(Vec3::new(
-                0.,
-                size,
-                size * spacing / 2.,
-            )),
-            ..default()
-        },
-        Movable::new(entity_spawn),
-    ));
+            },
+            Movable::new(),
+        ))
+        .with_children(|builder| {
+            builder.spawn(PbrBundle {
+                mesh: face,
+                material: materials.add(StandardMaterial {
+                    base_color: Color::RED,
+                    ..default()
+                }),
+                transform: Transform::default()
+                    .with_translation(Vec3::new(
+                        0.,
+                        person_height / 2.0 + person_radius,
+                        person_radius,
+                    ))
+                    .with_rotation(Quat::from_euler(
+                        EulerRot::XYZ,
+                        f32::to_radians(90.),
+                        0.,
+                        0.0,
+                    )),
+                ..default()
+            });
+        });
 }
 
-// This system will move all Movable entities with a Transform
-pub fn move_people(mut people: Query<(&mut Transform, &mut Movable)>, timer: Res<Time>) {
+pub fn move_person(mut people: Query<(&mut Transform, &mut Movable)>, timer: Res<Time>) {
+    // TODO: this assumes multiple people
     for (mut transform, mut person) in &mut people {
-        // Check if the entity moved too far from its spawn, if so invert the moving direction.
-        if (person.spawn - transform.translation).length() > person.max_distance {
-            person.speed *= -1.0;
-        }
-        let direction = transform.local_x();
-        transform.translation += direction * person.speed * timer.delta_seconds();
+        // // Check if the entity moved too far from its spawn, if so invert the moving direction.
+        // if (person.spawn - transform.translation).length() > person.max_distance {
+        //     person.speed *= -1.0;
+        // }
+        // let direction = transform.local_x();
+        transform.translation += person.direction * person.forward_speed * timer.delta_seconds();
     }
 }
 
-pub fn camera_control(
+pub fn control_person(
+    mut people: Query<&mut Movable>,
+    input: Res<Input<KeyCode>>,
+    time: Res<Time>,
+) {
+}
+
+pub fn control_camera(
     mut camera: Query<(&mut Camera, &mut Transform, &GlobalTransform), With<Camera3d>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
@@ -256,7 +281,7 @@ pub fn make_close_activated(
     for (transform, mut proximity) in &mut fixtures {
         let delta = transform.translation() - user_transform.translation();
         let distance = delta.length().abs();
-        if !proximity.is_activated && distance < 2.0 {
+        if !proximity.is_activated && distance < proximity.detection_radius {
             proximity.is_activated = true;
             proximity.elapsed_activated = Duration::ZERO;
             println!("Activated! {}", proximity.elapsed_activated.as_millis());
