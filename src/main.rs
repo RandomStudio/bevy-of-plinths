@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use systems::{camera_control_system, move_people, setup_scene};
+use systems::{camera_control_system, light_up_activated, move_people, setup_scene};
 
 mod components;
 mod systems;
@@ -10,6 +10,7 @@ fn main() {
         .add_startup_system(setup_scene)
         .add_system(camera_control_system)
         .add_system(move_people)
+        .add_system(light_up_activated)
         .add_system(bevy::window::close_on_esc)
         .run();
 }

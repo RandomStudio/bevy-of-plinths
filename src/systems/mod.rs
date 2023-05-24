@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
     prelude::*,
 };
 
-use crate::components::Movable;
+use crate::components::{Movable, ProximityActivated};
 
 pub fn setup_scene(
     mut commands: Commands,
@@ -14,13 +16,15 @@ pub fn setup_scene(
         // transform: Transform::from_xyz(5.0, 8.0, 2.0),
         transform: Transform::from_xyz(0., 1., 0.),
         point_light: PointLight {
-            intensity: 100.0, // lumens - roughly a 100W non-halogen incandescent bulb
+            intensity: 100.0, // lumens
             color: Color::WHITE,
-            // shadows_enabled: true,
+
+            shadows_enabled: true,
             ..default()
         },
         ..default()
     });
+
     // ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(shape::Plane::from_size(20.0).into()),
@@ -46,18 +50,18 @@ pub fn setup_scene(
         BloomSettings::default(), // 3. Enable bloom for the camera
     ));
 
-    let brightness: f32 = 4.0;
+    let brightness: f32 = 0.1;
 
-    let material_emissive = materials.add(StandardMaterial {
-        emissive: Color::Hsla {
-            hue: 0.,
-            saturation: 0.,
-            lightness: brightness,
-            alpha: 1.0,
-        },
-        // Color::rgb_linear(brightness, brightness, brightness), // 4. Put something bright in a dark environment to see the effect
-        ..default()
-    });
+    // let material_emissive = materials.add(StandardMaterial {
+    //     emissive: Color::Hsla {
+    //         hue: 0.,
+    //         saturation: 0.,
+    //         lightness: brightness,
+    //         alpha: 1.0,
+    //     },
+    //     // Color::rgb_linear(brightness, brightness, brightness), // 4. Put something bright in a dark environment to see the effect
+    //     ..default()
+    // });
 
     let size = 0.2;
     let spacing = 10.0;
@@ -80,17 +84,37 @@ pub fn setup_scene(
         .unwrap(),
     );
 
-    for x in -4..4 {
-        for z in -4..4 {
-            let x = x as f32 * size * spacing;
+    let mut count = 0;
+
+    for row in -4..4 {
+        for col in -4..4 {
+            let x = row as f32 * size * spacing;
             let y = 0.0;
-            let z = z as f32 * size * spacing;
-            commands.spawn(PbrBundle {
-                mesh: light_box_mesh.clone(),
-                material: material_emissive.clone(),
-                transform: Transform::from_xyz(x, y, z),
-                ..default()
-            });
+            let z = col as f32 * size * spacing;
+            count += 1;
+            let should_activate = count % 2 == 0;
+            println!("Count {}, should activate? {}", count, should_activate);
+            commands.spawn((
+                PbrBundle {
+                    mesh: light_box_mesh.clone(),
+                    material: materials.add(StandardMaterial {
+                        emissive: Color::Hsla {
+                            hue: 0.,
+                            saturation: 0.,
+                            lightness: brightness,
+                            alpha: 1.0,
+                        },
+                        // Color::rgb_linear(brightness, brightness, brightness), // 4. Put something bright in a dark environment to see the effect
+                        ..default()
+                    }),
+                    transform: Transform::from_xyz(x, y, z),
+                    ..default()
+                },
+                ProximityActivated {
+                    is_activated: should_activate,
+                    time_till_deactivated: Duration::ZERO,
+                },
+            ));
 
             // Adding too many lights appears to break the lighting system -
             // might need to use baked lighting or cheat using vertex
@@ -181,4 +205,26 @@ pub fn camera_control_system(
     );
 
     camera_transform.look_at(Vec3::ZERO, Vec3::Y);
+}
+
+const LIT: f32 = 4.0;
+const DIMMED: f32 = 0.1;
+
+pub fn light_up_activated(
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    fixtures: Query<(&Handle<StandardMaterial>, &ProximityActivated)>,
+) {
+    for (material_handle, proximity) in &fixtures {
+        let material = materials.get_mut(material_handle).unwrap();
+        if proximity.is_activated {
+            material.emissive.set_r(LIT);
+            material.emissive.set_g(LIT);
+            material.emissive.set_b(LIT);
+        } else {
+            material.emissive.set_r(DIMMED);
+            material.emissive.set_g(DIMMED);
+            material.emissive.set_b(DIMMED);
+        }
+    }
+    // for (mut fixture, proximity) in &mut fixtures {}
 }

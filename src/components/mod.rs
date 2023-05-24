@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
 // Define a struct to keep some information about our entity.
@@ -18,4 +20,10 @@ impl Movable {
             speed: 2.0,
         }
     }
+}
+
+#[derive(Component)]
+pub struct ProximityActivated {
+    pub is_activated: bool,
+    pub time_till_deactivated: Duration,
 }
