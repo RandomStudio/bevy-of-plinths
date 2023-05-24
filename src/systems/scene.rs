@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    components::{Movable, ProximityActivated},
+    components::{MovablePerson, ProximityActivated},
     utils::map_range,
 };
 
@@ -162,7 +162,7 @@ pub fn setup_scene(
                 )),
                 ..default()
             },
-            Movable::new(),
+            MovablePerson::new(),
         ))
         .with_children(|builder| {
             builder.spawn(PbrBundle {

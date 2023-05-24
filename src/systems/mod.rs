@@ -2,11 +2,11 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::components::{Movable, ProximityActivated};
+use crate::components::{MovablePerson, ProximityActivated};
 
 pub mod scene;
 
-pub fn move_person(mut people: Query<(&mut Transform, &Movable)>, timer: Res<Time>) {
+pub fn move_person(mut people: Query<(&mut Transform, &MovablePerson)>, timer: Res<Time>) {
     // TODO: this assumes multiple people
     for (mut transform, person) in &mut people {
         // // Check if the entity moved too far from its spawn, if so invert the moving direction.
@@ -19,7 +19,7 @@ pub fn move_person(mut people: Query<(&mut Transform, &Movable)>, timer: Res<Tim
 }
 
 pub fn control_person(
-    mut people: Query<(&mut Transform, &mut Movable)>,
+    mut people: Query<(&mut Transform, &mut MovablePerson)>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -110,7 +110,7 @@ pub fn light_up_activated(
 
 pub fn make_close_activated(
     mut fixtures: Query<(&GlobalTransform, &mut ProximityActivated)>,
-    user: Query<&GlobalTransform, With<Movable>>,
+    user: Query<&GlobalTransform, With<MovablePerson>>,
 ) {
     // TODO: this works for single user
     let user_transform = user.single();
@@ -122,6 +122,37 @@ pub fn make_close_activated(
             proximity.is_activated = true;
             proximity.elapsed_activated = Duration::ZERO;
             println!("Activated! {}", proximity.elapsed_activated.as_millis());
+        }
+    }
+}
+
+pub fn collision_detection(
+    fixtures: Query<&GlobalTransform, With<ProximityActivated>>,
+    mut user: Query<(&GlobalTransform, &mut MovablePerson)>,
+    time: Res<Time>,
+) {
+    let (user_transform, mut person) = user.single_mut();
+    let user_xz = Vec2::new(
+        user_transform.translation().x,
+        user_transform.translation().z,
+    );
+
+    for fixture_transform in &fixtures {
+        let fixture_xz = Vec2::new(
+            fixture_transform.translation().x,
+            fixture_transform.translation().z,
+        );
+        let delta = user_xz - fixture_xz;
+        let distance = delta.length().abs();
+        if distance < 1.0 {
+            // println!(
+            //     "collision? {:?} to {:?} is {}",
+            //     fixture_transform.translation(),
+            //     user_transform.translation(),
+            //     distance
+            // );
+            person.forward_speed -= time.delta().as_secs_f32() / 2.0;
+            person.forward_speed = person.forward_speed.max(0.);
         }
     }
 }
