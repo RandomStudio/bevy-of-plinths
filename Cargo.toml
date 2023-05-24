@@ -1,5 +1,5 @@
 [package]
-name = "my_bevy_game"
+name = "bevy_of_plinths"
 version = "0.1.0"
 edition = "2021"
 
