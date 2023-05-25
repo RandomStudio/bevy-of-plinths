@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use systems::{scene::*, *};
+use systems::{fixtures::*, person::*, scene::*, *};
 
 mod components;
 mod systems;

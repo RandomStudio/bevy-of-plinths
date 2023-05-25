@@ -8,7 +8,7 @@ use crate::{
     utils::map_range,
 };
 
-use super::DIMMED;
+use super::fixtures::{BOX_HEIGHT, BOX_WIDTH, DIMMED, SPACING};
 
 const NUM_ROWS: i32 = 5;
 const NUM_COLS: i32 = 5;
@@ -35,18 +35,14 @@ pub fn setup_scene(
 
     // ================ boxes
 
-    let box_height = 1.25;
-    let box_width = 0.5;
-    let spacing = 2.0; // centre-to-centre
-
     let light_box_mesh = meshes.add(
         shape::Box {
-            min_x: -box_width / 2.0,
-            max_x: box_width / 2.0,
+            min_x: -BOX_WIDTH / 2.0,
+            max_x: BOX_WIDTH / 2.0,
             min_y: 0.,
-            max_y: box_height,
-            min_z: -box_width / 2.0,
-            max_z: box_width / 2.0,
+            max_y: BOX_HEIGHT,
+            min_z: -BOX_WIDTH / 2.0,
+            max_z: BOX_WIDTH / 2.0,
         }
         .try_into()
         .unwrap(),
@@ -61,16 +57,16 @@ pub fn setup_scene(
                 row as f32,
                 0.,
                 row_max,
-                -spacing * row_max / 2.0,
-                spacing * row_max / 2.0,
+                -SPACING * row_max / 2.0,
+                SPACING * row_max / 2.0,
             );
             let y = 0.0;
             let z = map_range(
                 col as f32,
                 0.,
                 col_max,
-                -spacing * col_max / 2.0,
-                spacing * col_max / 2.0,
+                -SPACING * col_max / 2.0,
+                SPACING * col_max / 2.0,
             );
             commands.spawn((
                 PbrBundle {
@@ -95,7 +91,7 @@ pub fn setup_scene(
 
     // ================ ground plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(row_max * spacing * 3.0).into()),
+        mesh: meshes.add(shape::Plane::from_size(row_max * SPACING * 3.0).into()),
         material: materials.add(StandardMaterial {
             base_color: Color::GRAY,
             perceptual_roughness: 0.5,
@@ -112,7 +108,7 @@ pub fn setup_scene(
                 ..default()
             },
             tonemapping: Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
-            transform: Transform::from_xyz(0., 2.5, -row_max * spacing)
+            transform: Transform::from_xyz(0., 2.5, -row_max * SPACING)
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
@@ -156,7 +152,7 @@ pub fn setup_scene(
                     ..default()
                 }),
                 transform: Transform::default().with_translation(Vec3::new(
-                    0. + spacing / 2.0,
+                    0. + SPACING / 2.0,
                     (person_height + person_radius * 2.0) / 2.0,
                     0.,
                 )),
